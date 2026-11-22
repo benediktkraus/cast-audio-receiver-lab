@@ -167,6 +167,24 @@ def _sonos_target(value: object) -> dict:
     return canonical
 
 
+def _cast_target(value: object) -> dict:
+    allowed = {"host", "device_id", "port", "protocol"}
+    if not isinstance(value, dict) or set(value) - allowed:
+        raise ValueError("Cast target requires a host")
+    port = value.get("port", 8009)
+    if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
+        raise ValueError("invalid Cast port")
+    canonical = {
+        "host": _network_host(value.get("host"), "Cast host"),
+        "port": port,
+        "protocol": "cast",
+        "device_id": _safe_text(value.get("device_id") or value.get("host"), "device identity", 256),
+    }
+    if value.get("protocol", "cast") != "cast":
+        raise ValueError("inconsistent Cast protocol")
+    return canonical
+
+
 def _mpv_backend(_args: argparse.Namespace) -> AudioBackend:
     from .mpv_backend import MpvAudioBackend
 
@@ -206,6 +224,15 @@ def _sonos_backend(args: argparse.Namespace) -> AudioBackend:
     return SonosAudioBackend(target["host"])
 
 
+def _cast_backend(args: argparse.Namespace) -> AudioBackend:
+    from .cast_output import CastAudioBackend, load_cast_target
+
+    if args.target_config is None:
+        raise ValueError("--backend cast requires --target-config")
+    target = load_cast_target(args.target_config)
+    return CastAudioBackend(target["host"], target.get("port", 8009), ffmpeg=args.ffmpeg)
+
+
 def _plain_arguments(_route: "Route", _directory: Path, _cliairplay: str) -> list[str]:
     return []
 
@@ -239,6 +266,9 @@ _OUTPUTS = {
     ),
     "sonos": OutputDefinition(
         "sonos", "Sonos", False, _sonos_target, _sonos_backend, _target_arguments
+    ),
+    "cast": OutputDefinition(
+        "cast", "Google Cast (Default Media Receiver)", False, _cast_target, _cast_backend, _target_arguments
     ),
 }
 

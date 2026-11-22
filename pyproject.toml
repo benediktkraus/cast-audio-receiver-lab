@@ -20,6 +20,7 @@ youtube = ["yt-dlp[default]>=2026.8.19", "yt-dlp-ejs>=0.8"]
 legacy-research = ["cryptography>=41", "yt-dlp"]
 dlna = ["async-upnp-client==0.48.1"]
 sonos = ["soco==0.31.2"]
+cast = ["pychromecast==14.0.9"]
 
 [project.scripts]
 cast-audio-lab = "cast_audio_lab.runtime:main"

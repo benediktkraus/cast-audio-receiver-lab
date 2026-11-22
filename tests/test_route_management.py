@@ -412,6 +412,12 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
                 "host": "192.168.1.21"}},
         )
         self.assertEqual(sonos.status, 201)
+        cast = await self.client.post(
+            "/api/routes", headers=self.headers,
+            json={"name": "Kitchen", "backend": "cast", "target": {"host": "192.168.1.22"}},
+        )
+        self.assertEqual(cast.status, 201)
+        self.assertFalse((await cast.json())["enabled"])
         invalid = await self.client.post(
             "/api/routes", headers=self.headers,
             json={"name": "Public", "backend": "sonos", "target": {

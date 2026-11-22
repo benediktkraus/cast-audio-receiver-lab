@@ -16,7 +16,7 @@ from cast_audio_lab.routes import Route
 
 class OutputRegistryTests(unittest.TestCase):
     def test_builtin_outputs_and_cardinality(self):
-        self.assertEqual(output_names(), ("mpv", "airplay", "dlna", "sonos"))
+        self.assertEqual(output_names(), ("mpv", "airplay", "dlna", "sonos", "cast"))
         self.assertTrue(is_singleton("mpv"))
         self.assertFalse(is_singleton("airplay"))
 
