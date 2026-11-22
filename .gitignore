@@ -17,3 +17,5 @@ analysis-output/
 build/
 dist/
 third_party/
+
+deploy/dsm/out/

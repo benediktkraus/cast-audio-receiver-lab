@@ -1,0 +1,13 @@
+# Synology DS916+ (DSM 7.1), /volume1/docker/cast-audio-receiver/docker-compose.yml
+# Host networking is required for Cast mDNS and DLNA discovery. Web UI/health: http://192.168.0.107:8788 (LAN only).
+services:
+  cast-audio-receiver:
+    container_name: cast-audio-receiver
+    image: cast-audio-receiver:0.8.0-dev2-sc-${REVISION:?set REVISION to the deployed commit}
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      CAST_AUDIO_WEB_PORT: "8788"
+      CAST_AUDIO_LOG_LEVEL: INFO
+    volumes:
+      - /volume1/docker/cast-audio-receiver/data:/data
