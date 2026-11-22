@@ -57,13 +57,16 @@ class CastOutputTests(unittest.IsolatedAsyncioTestCase):
         try:
             await backend.load("https://cdn/playlist.m3u8", "audio/mpegurl", True, 120)
             self.assertEqual(relays[0].host, "192.168.0.102")
-            self.assertEqual(relays[0].calls, [("stream", "https://cdn/playlist.m3u8", 120, 3600)])
+            self.assertEqual(relays[0].calls, [("stream", "https://cdn/playlist.m3u8", 0, 3600)])
             _, url, mime, kwargs = cast.media_controller.calls[0]
             self.assertEqual((url, mime), ("http://192.168.0.107:5000/stream/x.mp3", "audio/mpeg"))
-            self.assertIsNone(kwargs["current_time"])  # the relay already starts at 120 s
+            self.assertEqual(kwargs["current_time"], 120)  # the device seeks inside the sized stream
             self.assertEqual(kwargs["metadata"]["artist"], "DJ")
             self.assertEqual(kwargs["metadata"]["images"], [{"url": "http://a/i.jpg"}])
-            cast.media_controller.status = SimpleNamespace(player_state="PLAYING", adjusted_current_time=5, idle_reason=None)
+            cast.media_controller.status = SimpleNamespace(player_state="PLAYING", adjusted_current_time=125, idle_reason=None)
+            await backend.seek(1800)
+            self.assertIn(("seek", 1800), cast.media_controller.calls)
+            self.assertEqual(len(relays[0].calls), 1)  # no restart of the stream on seek
             await asyncio.sleep(1.2)
             status = backend.status()
             self.assertEqual(status.state, "PLAYING")

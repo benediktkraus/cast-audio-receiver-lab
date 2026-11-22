@@ -47,8 +47,6 @@ class CastAudioBackend(NullAudioBackend):
         self._poll_task = None
         self._load_started = 0.0
         self._seen_playing = False
-        self._stream_offset = 0.0
-        self._stream_source = None  # (url, content_type) of a progressive stream
 
     async def _device(self):
         if self._cast is None or not self._cast.socket_client.is_connected:
@@ -74,16 +72,14 @@ class CastAudioBackend(NullAudioBackend):
         self._emit_status()
         from .dlna_media import DlnaMediaRelay, needs_relay
 
-        self._stream_offset = 0.0
-        self._stream_source = None
         if needs_relay(url, content_type, CAST_AUDIO_TYPES):
             if self._relay is None:
                 self._relay = (self._relay_factory or DlnaMediaRelay)(self.host, ffmpeg=self._ffmpeg)
             if should_stream(content_type, self.metadata.duration):
-                self._stream_source = (url, content_type)
+                # Whole item as one sized stream: the device seeks with HTTP ranges and
+                # shows the real position and duration instead of a restarted clip.
                 url, content_type, _codec = await self._relay.stream(
-                    url, CAST_AUDIO_TYPES, max(0, start_time), self.metadata.duration)
-                self._stream_offset, start_time = max(0, start_time), 0
+                    url, CAST_AUDIO_TYPES, 0, self.metadata.duration)
             else:
                 url, content_type = await self._relay.prepare(url, content_type, CAST_AUDIO_TYPES)
         metadata = {"metadataType": 3, "title": self.metadata.title or "Cast audio"}
@@ -98,7 +94,7 @@ class CastAudioBackend(NullAudioBackend):
             cast.media_controller.play_media, url, content_type,
             current_time=start_time or None, autoplay=autoplay, metadata=metadata,
         )
-        LOGGER.info("Cast load mime=%s offset=%.1f", content_type, self._stream_offset)
+        LOGGER.info("Cast load mime=%s start=%.1f", content_type, start_time)
         self._status.state = "BUFFERING" if autoplay else "PAUSED"
         self._emit_status()
         self._start_polling()
@@ -113,11 +109,6 @@ class CastAudioBackend(NullAudioBackend):
         await super().pause()
 
     async def seek(self, position):
-        if self._stream_source is not None:
-            # A progressive stream has no byte ranges: restart it at the target.
-            await self.load(*self._stream_source, True, max(0, position))
-            await super().seek(position)
-            return
         await self._call((await self._device()).media_controller.seek, max(0, position))
         await super().seek(position)
 
@@ -180,7 +171,7 @@ class CastAudioBackend(NullAudioBackend):
             state = media.player_state
             if state in {"PLAYING", "PAUSED"}:
                 self._seen_playing = True
-                self._set_position(float(media.adjusted_current_time or 0) + self._stream_offset)
+                self._set_position(float(media.adjusted_current_time or 0))
                 self._status.state = state
                 self._emit_status()
             elif state == "BUFFERING" or not self._seen_playing:
