@@ -48,6 +48,11 @@ class Route:
 
     def public(self):
         result = self.private()
+        if self.backend == "group":
+            result["target"] = {"protocol": "group", "device_id": self.target["device_id"],
+                                "members": [{"backend": m["backend"], "device_id": m["target"]["device_id"]}
+                                            for m in self.target["members"]]}
+            return result
         result["target"] = ({k: self.target[k] for k in ("host", "port", "protocol", "device_id")}
                             if self.target else None)
         if self.backend == "dlna" and self.target:
@@ -64,7 +69,7 @@ def validate_routes(values):
         if route.id in ids:
             raise ValueError("duplicate route identity")
         ids.add(route.id)
-        if route.target:
+        if route.target and route.backend != "group":  # a group owns no device of its own
             device = route.target["device_id"].lower().replace(":", "").replace("-", "")
             endpoint = (route.target["host"].lower(), route.target["port"])
             if device in devices or endpoint in endpoints:

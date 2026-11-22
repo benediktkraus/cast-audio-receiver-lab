@@ -191,7 +191,7 @@ def create_app(manager, *, discover=discover_airplay, discover_renderers=discove
                 if "target" in body:
                     raise ValueError("local output has no target")
                 route["backend"] = "mpv"
-            elif backend in {"dlna", "sonos", "cast"}:
+            elif backend in {"dlna", "sonos", "cast", "group"}:
                 route.update(backend=backend, target=body.get("target"))
             else:
                 raise ValueError("select a discovered target")

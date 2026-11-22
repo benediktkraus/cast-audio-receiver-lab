@@ -15,7 +15,7 @@ docker run --rm -v "$PWD/patches:/patches:ro" -v "$PWD/$OUT:/out" -v cast-receiv
   git clone -q --filter=blob:none $VC_REPO /src && cd /src && git checkout -q --detach $VC_COMMIT
   git apply /patches/vibecast-0.8.0.dev2-current.patch && git apply /patches/vibecast-soundcloud.patch
   cargo build -q --locked --release -p vibecast-cli && cp target/release/vibecast /out/vibecast"
-cp src/cast_audio_lab/dlna.py src/cast_audio_lab/dlna_media.py src/cast_audio_lab/cast_output.py src/cast_audio_lab/output_registry.py src/cast_audio_lab/management.py src/cast_audio_lab/vibecast_player.py deploy/dsm/Dockerfile "$OUT/"
+cp src/cast_audio_lab/dlna.py src/cast_audio_lab/dlna_media.py src/cast_audio_lab/cast_output.py src/cast_audio_lab/group_output.py src/cast_audio_lab/routes.py src/cast_audio_lab/output_registry.py src/cast_audio_lab/management.py src/cast_audio_lab/vibecast_player.py deploy/dsm/Dockerfile "$OUT/"
 docker build -q --build-arg REVISION="$REV" -t "$TAG-$REV" "$OUT" >/dev/null
 docker save "$TAG-$REV" | gzip -1 > "$OUT/image.tar.gz"
 echo "$TAG-$REV $(sha256sum "$OUT/vibecast" | cut -c1-16) $OUT/image.tar.gz"

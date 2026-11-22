@@ -527,8 +527,8 @@ def create_output(args: argparse.Namespace) -> tuple[AudioBackend, str]:
         return create_output_backend(args.backend, args), player_id
     if args.airplay_config is not None:
         raise ValueError("--airplay-config requires --backend airplay")
-    if args.target_config is not None and args.backend not in {"dlna", "sonos", "cast"}:
-        raise ValueError("--target-config requires --backend dlna, sonos or cast")
+    if args.target_config is not None and args.backend not in {"dlna", "sonos", "cast", "group"}:
+        raise ValueError("--target-config requires --backend dlna, sonos, cast or group")
     backend = (
         create_output_backend(args.backend, args)
         if args.backend in output_names()

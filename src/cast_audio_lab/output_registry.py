@@ -185,6 +185,26 @@ def _cast_target(value: object) -> dict:
     return canonical
 
 
+def _group_target(value: object) -> dict:
+    from .group_output import MEMBER_BACKENDS
+
+    if not isinstance(value, dict) or set(value) - {"members", "protocol", "device_id"}:
+        raise ValueError("group target requires members")
+    members = value.get("members")
+    if not isinstance(members, list) or not 2 <= len(members) <= 8:
+        raise ValueError("a group needs 2 to 8 members")
+    canonical = []
+    for member in members:
+        if not isinstance(member, dict) or set(member) != {"backend", "target"} or member["backend"] not in MEMBER_BACKENDS:
+            raise ValueError("invalid group member")
+        canonical.append({"backend": member["backend"],
+                          "target": validate_output_target(member["backend"], member["target"])})
+    ids = [m["target"]["device_id"] for m in canonical]
+    if len(set(ids)) != len(ids):
+        raise ValueError("duplicate group member")
+    return {"protocol": "group", "device_id": "group:" + "+".join(ids), "members": canonical}
+
+
 def _mpv_backend(_args: argparse.Namespace) -> AudioBackend:
     from .mpv_backend import MpvAudioBackend
 
@@ -233,6 +253,15 @@ def _cast_backend(args: argparse.Namespace) -> AudioBackend:
     return CastAudioBackend(target["host"], target.get("port", 8009), ffmpeg=args.ffmpeg)
 
 
+def _group_backend(args: argparse.Namespace) -> AudioBackend:
+    from .group_output import GroupAudioBackend, create_member, load_group_target
+
+    if args.target_config is None:
+        raise ValueError("--backend group requires --target-config")
+    target = load_group_target(args.target_config)
+    return GroupAudioBackend([create_member(m, args.ffmpeg) for m in target["members"]])
+
+
 def _plain_arguments(_route: "Route", _directory: Path, _cliairplay: str) -> list[str]:
     return []
 
@@ -269,6 +298,9 @@ _OUTPUTS = {
     ),
     "cast": OutputDefinition(
         "cast", "Google Cast (Default Media Receiver)", False, _cast_target, _cast_backend, _target_arguments
+    ),
+    "group": OutputDefinition(
+        "group", "Speaker group", False, _group_target, _group_backend, _target_arguments
     ),
 }
 
