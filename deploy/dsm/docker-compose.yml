@@ -1,5 +1,5 @@
-# Synology DS916+ (DSM 7.1), /volume1/docker/cast-audio-receiver/docker-compose.yml
-# Host networking is required for Cast mDNS and DLNA discovery. Web UI/health: http://192.168.0.107:8788 (LAN only).
+# Example for a Synology NAS (DSM 7.1): /volume1/docker/cast-audio-receiver/docker-compose.yml
+# Host networking is required for Cast mDNS and DLNA discovery. Web UI/health: http://<nas-ip>:8788 (LAN only).
 services:
   cast-audio-receiver:
     container_name: cast-audio-receiver
